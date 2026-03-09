@@ -31,7 +31,7 @@ jobs:
           TWILIO_WHATSAPP_FROM: ${{ secrets.TWILIO_WHATSAPP_FROM }}
           # Store as JSON array, e.g.: ["+46701234567", "+46709876543"]
           RECIPIENTS: ${{ secrets.RECIPIENTS }}
-          PRICE_ZONE: SE3
+          TIBBER_TOKEN: ${{ secrets.TIBBER_TOKEN }}
           # Set USE_OPENAI to "true" and add OPENAI_API_KEY secret to enable AI formatting
           USE_OPENAI: "false"
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}

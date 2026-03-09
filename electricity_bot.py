@@ -15,7 +15,7 @@ def load_config(path=CONFIG_PATH):
             config = json.load(f)
 
     # Environment variables override config file (used by GitHub Actions secrets)
-    for key in ["TWILIO_ACCOUNT_SID", "TWILIO_AUTH_TOKEN", "TWILIO_WHATSAPP_FROM", "OPENAI_API_KEY"]:
+    for key in ["TWILIO_ACCOUNT_SID", "TWILIO_AUTH_TOKEN", "TWILIO_WHATSAPP_FROM", "OPENAI_API_KEY", "TIBBER_TOKEN"]:
         if os.getenv(key):
             config[key] = os.getenv(key)
 
@@ -31,26 +31,51 @@ def load_config(path=CONFIG_PATH):
     return config
 
 
-def fetch_prices(zone="SE3"):
-    """Fetch today's hourly spot prices from elprisetjust.nu (free Nordpool data).
-
-    E.ON bases their variable pricing on these Nordpool spot prices.
-    Zone: SE1 (north), SE2, SE3 (Stockholm/central), SE4 (south/Malmö).
+def fetch_prices(tibber_token):
+    """Fetch today's hourly spot prices from Tibber's GraphQL API.
 
     Returns a list of dicts: {"hour": int, "price_ore": float}
     """
-    today = date.today()
-    url = (
-        f"https://elprisetjust.nu/api/v1/prices/"
-        f"{today.year}/{today.month:02d}-{today.day:02d}_{zone}.json"
+    query = """
+    {
+      viewer {
+        homes {
+          currentSubscription {
+            priceInfo {
+              today {
+                startsAt
+                total
+              }
+            }
+          }
+        }
+      }
+    }
+    """
+    resp = requests.post(
+        "https://api.tibber.com/v1-beta/gql",
+        json={"query": query},
+        headers={
+            "Authorization": f"Bearer {tibber_token}",
+            "Content-Type": "application/json",
+        },
+        timeout=15,
     )
-    resp = requests.get(url, timeout=15)
     resp.raise_for_status()
+    data = resp.json()
+
+    homes = data["data"]["viewer"]["homes"]
+    if not homes:
+        raise ValueError("No homes found in Tibber account.")
+
+    today_prices = homes[0]["currentSubscription"]["priceInfo"]["today"]
+    if not today_prices:
+        raise ValueError("No price data for today from Tibber.")
 
     prices = []
-    for entry in resp.json():
-        hour = datetime.fromisoformat(entry["time_start"]).hour
-        price_ore = entry["SEK_per_kWh"] * 100  # Convert SEK/kWh → öre/kWh
+    for entry in today_prices:
+        hour = datetime.fromisoformat(entry["startsAt"]).hour
+        price_ore = entry["total"] * 100  # Convert SEK/kWh → öre/kWh
         prices.append({"hour": hour, "price_ore": price_ore})
 
     return prices
@@ -121,10 +146,12 @@ def send_whatsapp(message, recipients, config):
 
 def main():
     config = load_config()
-    zone = config.get("PRICE_ZONE", "SE3")
+    tibber_token = config.get("TIBBER_TOKEN")
+    if not tibber_token:
+        raise ValueError("TIBBER_TOKEN is not set. Add it to config.json or as a GitHub secret.")
     recipients = config.get("RECIPIENTS", [])
 
-    prices = fetch_prices(zone)
+    prices = fetch_prices(tibber_token)
     cheapest, most_expensive = analyze_prices(prices)
     message = format_message(prices, cheapest, most_expensive)
 
