@@ -118,9 +118,11 @@ def fetch_prices(tibber_token=None, zone="SE3"):
 def analyze_prices(prices, top_n=3):
     """Return the cheapest and most expensive hours.
 
+    Cheapest hours exclude 23:00–08:00 (night hours).
     Returns (cheapest, most_expensive) — each a list of top_n dicts.
     """
-    sorted_asc = sorted(prices, key=lambda x: x["price_ore"])
+    daytime = [p for p in prices if 8 <= p["hour"] < 23]
+    sorted_asc = sorted(daytime, key=lambda x: x["price_ore"])
     cheapest = sorted_asc[:top_n]
     most_expensive = list(reversed(sorted_asc[-top_n:]))
     return cheapest, most_expensive
