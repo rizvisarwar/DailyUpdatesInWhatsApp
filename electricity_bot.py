@@ -41,7 +41,7 @@ def fetch_prices(zone="SE3"):
     """
     today = date.today()
     url = (
-        f"https://www.elprisetjust.nu/api/v1/prices/"
+        f"https://elprisetjust.nu/api/v1/prices/"
         f"{today.year}/{today.month:02d}-{today.day:02d}_{zone}.json"
     )
     resp = requests.get(url, timeout=15)
