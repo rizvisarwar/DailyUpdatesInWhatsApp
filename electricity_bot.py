@@ -40,9 +40,13 @@ def fetch_prices_elprisetjust(zone="SE3"):
     )
     resp = requests.get(url, timeout=15)
     resp.raise_for_status()
+    seen = set()
     prices = []
     for entry in resp.json():
         hour = datetime.fromisoformat(entry["time_start"]).hour
+        if hour in seen:
+            continue
+        seen.add(hour)
         price_ore = entry["SEK_per_kWh"] * 100  # SEK/kWh → öre/kWh
         prices.append({"hour": hour, "price_ore": price_ore})
     return prices
@@ -118,7 +122,7 @@ def analyze_prices(prices, top_n=3):
     """
     sorted_asc = sorted(prices, key=lambda x: x["price_ore"])
     cheapest = sorted_asc[:top_n]
-    most_expensive = sorted_asc[-top_n:][::-1]
+    most_expensive = list(reversed(sorted_asc[-top_n:]))
     return cheapest, most_expensive
 
 
