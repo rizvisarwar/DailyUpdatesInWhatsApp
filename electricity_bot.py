@@ -31,21 +31,32 @@ def load_config(path=CONFIG_PATH):
     return config
 
 
-def fetch_prices(tibber_token):
-    """Fetch today's hourly spot prices from Tibber's GraphQL API.
+def fetch_prices_elprisetjust(zone="SE3"):
+    """Fetch SE3 prices from elprisetjust.nu (free, no auth, Nordpool data)."""
+    today = date.today()
+    url = (
+        f"https://elprisetjust.nu/api/v1/prices/"
+        f"{today.year}/{today.month:02d}-{today.day:02d}_{zone}.json"
+    )
+    resp = requests.get(url, timeout=15)
+    resp.raise_for_status()
+    prices = []
+    for entry in resp.json():
+        hour = datetime.fromisoformat(entry["time_start"]).hour
+        price_ore = entry["SEK_per_kWh"] * 100  # SEK/kWh → öre/kWh
+        prices.append({"hour": hour, "price_ore": price_ore})
+    return prices
 
-    Returns a list of dicts: {"hour": int, "price_ore": float}
-    """
+
+def fetch_prices_tibber(tibber_token):
+    """Fetch prices from Tibber API (requires active Tibber home subscription)."""
     query = """
     {
       viewer {
         homes {
           currentSubscription {
             priceInfo {
-              today {
-                startsAt
-                total
-              }
+              today { startsAt total }
             }
           }
         }
@@ -55,30 +66,49 @@ def fetch_prices(tibber_token):
     resp = requests.post(
         "https://api.tibber.com/v1-beta/gql",
         json={"query": query},
-        headers={
-            "Authorization": f"Bearer {tibber_token}",
-            "Content-Type": "application/json",
-        },
+        headers={"Authorization": f"Bearer {tibber_token}", "Content-Type": "application/json"},
         timeout=15,
     )
     resp.raise_for_status()
-    data = resp.json()
-
-    homes = data["data"]["viewer"]["homes"]
+    homes = resp.json()["data"]["viewer"]["homes"]
     if not homes:
-        raise ValueError("No homes found in Tibber account.")
-
-    today_prices = homes[0]["currentSubscription"]["priceInfo"]["today"]
+        return None
+    subscription = homes[0].get("currentSubscription")
+    if not subscription:
+        return None
+    today_prices = subscription["priceInfo"]["today"]
     if not today_prices:
-        raise ValueError("No price data for today from Tibber.")
-
+        return None
     prices = []
     for entry in today_prices:
         hour = datetime.fromisoformat(entry["startsAt"]).hour
-        price_ore = entry["total"] * 100  # Convert SEK/kWh → öre/kWh
+        price_ore = entry["total"] * 100
         prices.append({"hour": hour, "price_ore": price_ore})
-
     return prices
+
+
+def fetch_prices(tibber_token=None, zone="SE3"):
+    """Fetch today's hourly prices, trying elprisetjust.nu first, then Tibber."""
+    try:
+        print(f"Fetching prices from elprisetjust.nu (zone: {zone})...")
+        prices = fetch_prices_elprisetjust(zone)
+        print(f"Got {len(prices)} hours from elprisetjust.nu.")
+        return prices
+    except Exception as e:
+        print(f"elprisetjust.nu failed: {e}")
+
+    if tibber_token:
+        try:
+            print("Trying Tibber API...")
+            prices = fetch_prices_tibber(tibber_token)
+            if prices:
+                print(f"Got {len(prices)} hours from Tibber.")
+                return prices
+            print("Tibber returned no prices (no active subscription).")
+        except Exception as e:
+            print(f"Tibber failed: {e}")
+
+    raise RuntimeError("Could not fetch electricity prices from any source.")
 
 
 def analyze_prices(prices, top_n=3):
@@ -151,7 +181,8 @@ def main():
         raise ValueError("TIBBER_TOKEN is not set. Add it to config.json or as a GitHub secret.")
     recipients = config.get("RECIPIENTS", [])
 
-    prices = fetch_prices(tibber_token)
+    zone = config.get("PRICE_ZONE", "SE3")
+    prices = fetch_prices(tibber_token, zone)
     cheapest, most_expensive = analyze_prices(prices)
     message = format_message(prices, cheapest, most_expensive)
 
