@@ -1,0 +1,36 @@
+name: Daily WhatsApp Electricity Update
+
+on:
+  schedule:
+    # 6:00 AM UTC = 7:00 AM CET (winter) / 8:00 AM CEST (summer)
+    # Note: GitHub Actions runs in UTC. Sweden is UTC+1 (winter) / UTC+2 (summer).
+    # This fires at 7 AM in winter and 8 AM in summer — adjust to 0 5 if you prefer 7 AM in summer.
+    - cron: '0 6 * * *'
+  workflow_dispatch:  # Allow manual triggering from GitHub UI
+
+jobs:
+  send-update:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Send electricity price update
+        run: python electricity_bot.py
+        env:
+          TWILIO_ACCOUNT_SID: ${{ secrets.TWILIO_ACCOUNT_SID }}
+          TWILIO_AUTH_TOKEN: ${{ secrets.TWILIO_AUTH_TOKEN }}
+          TWILIO_WHATSAPP_FROM: ${{ secrets.TWILIO_WHATSAPP_FROM }}
+          # Store as JSON array, e.g.: ["+46701234567", "+46709876543"]
+          RECIPIENTS: ${{ secrets.RECIPIENTS }}
+          PRICE_ZONE: SE3
+          # Set USE_OPENAI to "true" and add OPENAI_API_KEY secret to enable AI formatting
+          USE_OPENAI: "false"
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}

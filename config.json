@@ -1,0 +1,12 @@
+{
+  "TWILIO_ACCOUNT_SID": "your_account_sid",
+  "TWILIO_AUTH_TOKEN": "your_auth_token",
+  "TWILIO_WHATSAPP_FROM": "whatsapp:+14155238886",
+  "RECIPIENTS": [
+    "+46000000000",
+    "+46000000001"
+  ],
+  "PRICE_ZONE": "SE3",
+  "USE_OPENAI": false,
+  "OPENAI_API_KEY": ""
+}
