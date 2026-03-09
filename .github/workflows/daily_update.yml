@@ -1,5 +1,6 @@
 name: Daily WhatsApp Electricity Update
 
+
 on:
   schedule:
     # 6:00 AM UTC = 7:00 AM CET (winter) / 8:00 AM CEST (summer)
