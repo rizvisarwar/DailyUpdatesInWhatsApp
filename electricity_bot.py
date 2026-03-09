@@ -32,10 +32,10 @@ def load_config(path=CONFIG_PATH):
 
 
 def fetch_prices_elprisetjust(zone="SE3"):
-    """Fetch SE3 prices from elprisetjust.nu (free, no auth, Nordpool data)."""
+    """Fetch hourly prices from elprisetjustnu.se (free, no auth, Nordpool data)."""
     today = date.today()
     url = (
-        f"https://elprisetjust.nu/api/v1/prices/"
+        f"https://www.elprisetjustnu.se/api/v1/prices/"
         f"{today.year}/{today.month:02d}-{today.day:02d}_{zone}.json"
     )
     resp = requests.get(url, timeout=15)
