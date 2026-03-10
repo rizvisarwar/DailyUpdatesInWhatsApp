@@ -3,10 +3,9 @@ name: Daily WhatsApp Electricity Update
 
 on:
   schedule:
-    # 6:00 AM UTC = 7:00 AM CET (winter) / 8:00 AM CEST (summer)
-    # Note: GitHub Actions runs in UTC. Sweden is UTC+1 (winter) / UTC+2 (summer).
-    # This fires at 7 AM in winter and 8 AM in summer — adjust to 0 5 if you prefer 7 AM in summer.
-    - cron: '0 6 * * *'
+    # Sweden is UTC+1 (CET, winter) / UTC+2 (CEST, summer)
+    # 5 AM UTC = 7 AM CEST (summer) / 6 AM CET (winter)
+    - cron: '0 5 * * *'
   workflow_dispatch:  # Allow manual triggering from GitHub UI
 
 jobs:
