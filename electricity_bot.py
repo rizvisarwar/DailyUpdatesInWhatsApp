@@ -88,7 +88,7 @@ def fetch_prices_tibber(tibber_token):
     return prices
 
 
-def fetch_prices(tibber_token=None, zone=None):
+def fetch_prices(tibber_token=None, zone="SE3"):
     """Fetch today's hourly prices, trying elprisetjust.nu first, then Tibber."""
     try:
         print(f"Fetching prices from elprisetjust.nu (zone: {zone})...")
