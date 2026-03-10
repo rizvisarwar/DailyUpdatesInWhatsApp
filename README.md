@@ -97,19 +97,13 @@ You can trigger the workflow manually from the **Actions** tab in GitHub → sel
 pip install -r requirements.txt
 ```
 
-Copy `config.json` and fill in your credentials:
+Copy the example config and fill in your real credentials:
 
-```json
-{
-  "TWILIO_ACCOUNT_SID": "your_account_sid",
-  "TWILIO_AUTH_TOKEN": "your_auth_token",
-  "TWILIO_WHATSAPP_FROM": "whatsapp:+14155238886",
-  "RECIPIENTS": ["+46701234567"],
-  "PRICE_ZONE": "SE3",
-  "USE_OPENAI": false,
-  "OPENAI_API_KEY": ""
-}
+```bash
+cp config.example.json config.json
 ```
+
+Edit `config.json` with your credentials. **`config.json` is in `.gitignore` — never commit it.**
 
 Run:
 
@@ -124,8 +118,10 @@ If Twilio is not configured (account SID left as placeholder), the message is pr
 | File | Description |
 |------|-------------|
 | `electricity_bot.py` | Main bot script |
-| `config.json` | Local configuration (credentials — do not commit real values) |
+| `config.example.json` | Configuration template (safe to commit — no real credentials) |
+| `config.json` | Your local config with real credentials — **gitignored, never committed** |
 | `requirements.txt` | Python dependencies |
+| `.gitignore` | Excludes `config.json` and other sensitive files |
 | `.github/workflows/daily_update.yml` | GitHub Actions scheduled workflow |
 
 ## Cost
