@@ -129,7 +129,7 @@ def analyze_prices(prices, top_n=3):
 
 
 def format_message(prices, cheapest, most_expensive):
-    today = date.today().strftime("%d/%m/%Y")
+    today = date.today().strftime("%Y-%m-%d")
     avg = sum(p["price_ore"] for p in prices) / len(prices)
 
     lines = [
