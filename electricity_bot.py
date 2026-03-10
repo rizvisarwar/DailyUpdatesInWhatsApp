@@ -15,15 +15,12 @@ def load_config(path=CONFIG_PATH):
             config = json.load(f)
 
     # Environment variables override config file (used by GitHub Actions secrets)
-    for key in ["TWILIO_ACCOUNT_SID", "TWILIO_AUTH_TOKEN", "TWILIO_WHATSAPP_FROM", "OPENAI_API_KEY", "TIBBER_TOKEN"]:
+    for key in ["TWILIO_ACCOUNT_SID", "TWILIO_AUTH_TOKEN", "TWILIO_WHATSAPP_FROM", "OPENAI_API_KEY", "TIBBER_TOKEN", "PRICE_ZONE"]:
         if os.getenv(key):
             config[key] = os.getenv(key)
 
     if os.getenv("RECIPIENTS"):
         config["RECIPIENTS"] = json.loads(os.getenv("RECIPIENTS"))
-
-    if os.getenv("PRICE_ZONE"):
-        config["PRICE_ZONE"] = os.getenv("PRICE_ZONE")
 
     if os.getenv("USE_OPENAI"):
         config["USE_OPENAI"] = os.getenv("USE_OPENAI", "").lower() in ("1", "true", "yes")
@@ -31,7 +28,7 @@ def load_config(path=CONFIG_PATH):
     return config
 
 
-def fetch_prices_elprisetjust(zone="SE3"):
+def fetch_prices_elprisetjust(zone):
     """Fetch hourly prices from elprisetjustnu.se (free, no auth, Nordpool data)."""
     today = date.today()
     url = (
