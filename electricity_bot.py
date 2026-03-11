@@ -15,7 +15,7 @@ def load_config(path=CONFIG_PATH):
             config = json.load(f)
 
     # Environment variables override config file (used by GitHub Actions secrets)
-    for key in ["TWILIO_ACCOUNT_SID", "TWILIO_AUTH_TOKEN", "TWILIO_WHATSAPP_FROM", "OPENAI_API_KEY", "TIBBER_TOKEN", "PRICE_ZONE"]:
+    for key in ["TWILIO_ACCOUNT_SID", "TWILIO_AUTH_TOKEN", "TWILIO_WHATSAPP_FROM", "TWILIO_CONTENT_SID", "OPENAI_API_KEY", "TIBBER_TOKEN", "PRICE_ZONE"]:
         if os.getenv(key):
             config[key] = os.getenv(key)
 
@@ -168,12 +168,41 @@ def refine_with_openai(message, api_key):
     return response.choices[0].message.content.strip()
 
 
-def send_whatsapp(message, recipients, config):
+def build_template_variables(prices, cheapest, most_expensive):
+    """Build variables dict for the Twilio WhatsApp Content Template."""
+    today = date.today().strftime("%Y-%m-%d")
+    avg = sum(p["price_ore"] for p in prices) / len(prices)
+
+    def fmt_hours(hours):
+        return "\n".join(
+            f"{p['hour']:02d}:00–{p['hour']+1:02d}:00  {p['price_ore']:.1f} öre/kWh"
+            for p in hours
+        )
+
+    return {
+        "1": today,
+        "2": f"{avg:.1f}",
+        "3": fmt_hours(cheapest),
+        "4": fmt_hours(most_expensive),
+    }
+
+
+def send_whatsapp(message, recipients, config, content_variables=None):
     client = Client(config["TWILIO_ACCOUNT_SID"], config["TWILIO_AUTH_TOKEN"])
     from_number = config["TWILIO_WHATSAPP_FROM"]
+    content_sid = config.get("TWILIO_CONTENT_SID")
+
     for to in recipients:
         to_number = f"whatsapp:{to}" if not to.startswith("whatsapp:") else to
-        client.messages.create(body=message, from_=from_number, to=to_number)
+        if content_sid and content_variables:
+            client.messages.create(
+                content_sid=content_sid,
+                content_variables=json.dumps(content_variables),
+                from_=from_number,
+                to=to_number,
+            )
+        else:
+            client.messages.create(body=message, from_=from_number, to=to_number)
         print(f"Sent to {to}")
 
 
@@ -194,8 +223,10 @@ def main():
 
     print("Message:\n", message)
 
+    content_variables = build_template_variables(prices, cheapest, most_expensive)
+
     if config.get("TWILIO_ACCOUNT_SID") and config["TWILIO_ACCOUNT_SID"] != "your_account_sid":
-        send_whatsapp(message, recipients, config)
+        send_whatsapp(message, recipients, config, content_variables)
     else:
         print("\n(Twilio not configured — message printed above, not sent)")
 
