@@ -28,6 +28,7 @@ jobs:
           TWILIO_ACCOUNT_SID: ${{ secrets.TWILIO_ACCOUNT_SID }}
           TWILIO_AUTH_TOKEN: ${{ secrets.TWILIO_AUTH_TOKEN }}
           TWILIO_WHATSAPP_FROM: ${{ secrets.TWILIO_WHATSAPP_FROM }}
+          TWILIO_CONTENT_SID: ${{ secrets.TWILIO_CONTENT_SID }}
           # Store as JSON array, e.g.: ["+46701234567", "+46709876543"]
           RECIPIENTS: ${{ secrets.RECIPIENTS }}
           TIBBER_TOKEN: ${{ secrets.TIBBER_TOKEN }}
